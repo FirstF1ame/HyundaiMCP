@@ -1,3 +1,5 @@
+# 재현 가능한 환경을 위한 직접/간접 의존성 고정 목록. 설치: pip install -r requirements-lock.txt
+# 기능별 직접 의존성과 선택 의존성 구분은 pyproject.toml을 참고한다.
 annotated-doc==0.0.5
 annotated-types==0.8.0
 anyio==4.15.1

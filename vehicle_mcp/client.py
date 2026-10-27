@@ -10,6 +10,7 @@ from mcp.client.streamable_http import streamable_http_client
 from .config import settings_from_env
 
 
+# HTTP 연결 → MCP 초기화 → 세션 사용 → 연결 정리를 하나의 컨텍스트로 묶는다.
 @asynccontextmanager
 async def connect():
     settings = settings_from_env()
@@ -24,6 +25,7 @@ async def connect():
                 yield session
 
 
+# API 키 없이 도구 목록을 조회하고 get_navigation_info를 실제 호출하는 점검 명령.
 async def probe():
     async with connect() as session:
         tools = await session.list_tools()
@@ -34,6 +36,7 @@ async def probe():
             raise RuntimeError("MCP tool failed")
 
 
+# 로컬 Host가 GPT의 함수 호출 요청을 MCP로 중계한다. GPT가 localhost에 직접 접속하지 않는다.
 async def ask_gpt(question: str):
     """Local MCP host: GPT asks for a function; this host calls MCP, then returns its output.
 
@@ -46,12 +49,14 @@ async def ask_gpt(question: str):
         raise SystemExit("Set OPENAI_API_KEY and OPENAI_MODEL in .env; never paste the key into chat")
     async with connect() as session, AsyncOpenAI(timeout=45, max_retries=0) as ai:
         discovered = await session.list_tools()
+        # 서버가 제공하더라도 허용 목록에 없는 도구는 모델에 노출하지 않는다.
         allowed = {t.name: t for t in discovered.tools if t.name == "get_navigation_info"}
         tools = [{
             "type": "function", "name": t.name, "description": t.description,
             "parameters": t.inputSchema, "strict": False,
         } for t in allowed.values()]
         history = [{"role": "user", "content": question}]
+        # 함수 호출과 결과 반환을 최대 4회 반복해 무한 도구 호출을 방지한다.
         for _ in range(4):
             response = await ai.responses.create(
                 model=os.environ["OPENAI_MODEL"], store=False,
@@ -64,6 +69,7 @@ async def ask_gpt(question: str):
                 ),
                 tools=tools, input=history,
             )
+            # 모델 출력(함수 호출 포함)을 대화에 보존한 뒤 call_id에 맞는 결과를 덧붙인다.
             history.extend(response.output)
             calls = [i for i in response.output if i.type == "function_call"]
             if not calls:
@@ -75,6 +81,7 @@ async def ask_gpt(question: str):
                 else:
                     try:
                         arguments = json.loads(call.arguments)
+                        # 조회 도구는 인자를 받지 않으므로 JSON 객체 {}만 허용한다.
                         if not isinstance(arguments, dict) or arguments:
                             raise ValueError("This tool accepts an empty object only")
                         result = await session.call_tool(call.name, arguments)
@@ -86,6 +93,7 @@ async def ask_gpt(question: str):
         raise RuntimeError("Tool-call limit exceeded")
 
 
+# --ask가 없으면 MCP 점검만, 있으면 선택적인 유료 GPT API 경로를 실행한다.
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--ask", help="Optional GPT question (requires API key and gpt extra)")

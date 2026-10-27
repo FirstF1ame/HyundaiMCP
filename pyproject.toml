@@ -1,7 +1,9 @@
+# 패키지 설치/개발 모드 빌드에 사용하는 도구.
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
+# Python 버전과 서버·클라이언트 공통 필수 의존성.
 [project]
 name = "vehicle-mcp-poc"
 version = "0.1.0"
@@ -12,13 +14,16 @@ dependencies = [
   "httpx==0.28.1", "python-dotenv==1.2.4",
 ]
 
+# gpt: 선택적 GPT Host / test: 비동기 통합 테스트 도구.
 [project.optional-dependencies]
 gpt = ["openai>=2,<3"]
 test = ["pytest==8.4.2", "pytest-asyncio==0.26.0"]
 
+# 배포 패키지에 vehicle_mcp만 포함하고 scripts/tests는 제외한다.
 [tool.setuptools.packages.find]
 include = ["vehicle_mcp*"]
 
+# async 테스트 자동 실행, 테스트별 이벤트 루프, 테스트 검색 위치를 지정한다.
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"

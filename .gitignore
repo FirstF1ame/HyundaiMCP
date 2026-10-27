@@ -1,5 +1,7 @@
+# 로컬 의존성과 비밀 설정은 Git에 포함하지 않는다.
 .venv/
 .env
+# 실행·테스트·개발 설치 과정에서 자동 생성되는 산출물.
 __pycache__/
 .pytest_cache/
 *.egg-info/
