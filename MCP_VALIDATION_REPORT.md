@@ -4,6 +4,8 @@
 대상 프로젝트: FirstF1ame/HyundaiMCP  
 주요 근거: [bridge-c16-1000-r1.json](docs/benchmarks/bridge-c16-1000-r1.json)
 
+**2026-10-28 Android 보완:** 사용자가 SDK 연결 성공과 내장 앱의 경로 안내 화면을 확인했다. 기존 0.2.0은 `isRouting=false`이면 목적지 API를 호출하지 않는 가드 때문에 `no_destination`을 반환할 수 있었다. 0.2.1은 이 가드를 제거하고 목적지 콜백을 직접 확인한다. 응답이 없으면 `sdk_error`로 처리하며 실제 데이터 수신 성공은 사용자 AVD에서 재확인해야 한다. Python 모의 성능 결과는 이 변경의 영향을 받지 않는다.
+
 ## 1. 현재 확인된 결과
 
 **Windows의 로컬 MCP 서버와 Python Bridge 시뮬레이터를 대상으로, 동시 요청 워커 16개가 총 1,000회 호출을 수행했고 모두 정상 모의 응답을 받았다.**
@@ -15,9 +17,9 @@
 | 정상 호출 지연 | 평균 51.889ms, p95 55.855ms | MCP 요청부터 결과 수신·검사까지 |
 | 사용자 PC의 장애·동시성 테스트 | `9 passed, 2 deselected in 7.94s` | 사용자가 공유한 pytest 출력 |
 | 클라우드의 기존 Python 전체 테스트 | 12개 통과 이력 | 앞선 개발·검증 실행 기록 및 `VALIDATION.md` |
-| Android JVM 단위 테스트 | 6개 통과 이력 | 앞선 APK 제작 시 검사 기록 |
+| Android JVM 단위 테스트 | 최초 6개 + 조회 회귀 12개 = 현재 18개 통과 | 0.2.1 클라우드 검사 |
 | Android APK 빌드·서명 검사·Lint | 통과 이력 | 앞선 APK 제작 시 검사 기록 |
-| Pleos AVD의 실제 내비게이션 조회 | 미검증 | 호환 내비게이션 앱/서비스를 확보하지 못한 상태 |
+| Pleos AVD의 실제 내비게이션 조회 | SDK 연결·내장 안내 화면 확인, 정상 목적지 응답 미확인 | 사용자 화면 및 0.2.1 AVD 재검증 필요 |
 | 실제 GPT API·실차 동작 | 미검증 | 이번 벤치마크에 포함되지 않음 |
 
 여기서 **통과**는 실행한 시나리오의 조건을 만족했다는 뜻이다. 제품의 SLA, 최대 처리량, 장시간 안정성에 대한 별도 합격 기준을 충족했다는 의미는 아니다. 이 문서 작성 과정에서는 원본 JSON과 코드 내용을 대조했으며, 과거의 모든 테스트를 새로 실행한 것은 아니다.
@@ -386,15 +388,15 @@ GPT 서버가 localhost의 MCP에 직접 접속하는 구조가 아니다. 로�
 | --- | --- |
 | `NaviHelper(context.applicationContext)` | 공식 NaviHelper SDK 진입점 생성 |
 | `start()` / `initialize()` | 서비스 연결 성공/실패 처리; 성공 후 리스너 등록 |
-| `Mutex` | 여러 SDK 조회가 겹치지 않도록 직렬화 |
-| `CompletableDeferred` | 콜백 결과를 `suspend` 조회 함수가 기다릴 수 있도록 연결 |
-| `getRouteStateInfo()` | 활성 경로 여부 요청 |
-| `onRouteStateInfo()` | `isRouting` 결과를 대기 중인 조회에 전달 |
+| `NavigationQuery`의 `Mutex` | 여러 SDK 조회가 겹치지 않도록 직렬화 |
+| `NavigationQuery`의 `CompletableDeferred` | 목적지 콜백을 `suspend` 조회 함수와 연결 |
+| `getRouteStateInfo()` | 경로 상태 진단 요청. 결과로 목적지 API 호출을 막지 않음 |
+| `onRouteStateInfo()` | `isRouting`, `naviMode`를 화면 진단에 표시 |
 | `getDestinationInfo()` | 목적지 데이터 요청 |
 | `onDestinationInfo()` | `name`, `remainDistance`, `remainTime`을 `NavigationResult`로 매핑 |
 | `onDestinationChanged()` | 변경 중인 경로의 결과 혼합을 피하도록 현재 대기에 오류 전달 |
 | `onError()` | SDK 오류를 현재 대기에 전달하고 원문 대신 상태 안내 |
-| `withTimeout(6000)` | SDK 결과 대기를 6초로 제한; 실패 시 `sdk_error` |
+| `NavigationQuery.read()`의 `withTimeout(6000)` | 목적지 콜백 대기를 6초로 제한; 미응답은 `sdk_error` |
 | `close()` | 콜백 작업 취소, 리스너 제거, SDK release |
 
 공식 배포의 `NaviHelper:3.0.5` 및 `navi-data:3.0.4` 소스로 확인한 필드다. `remainDistance`는 미터, `remainTime`은 초다.
@@ -447,6 +449,8 @@ HTTP 연결 제한은 연결 3초, 읽기 12초, 전체 호출 14초다. 블로�
 | `android/app/src/main/res/drawable/ic_vehicle.xml` | 앱 아이콘 |
 | `android/app/src/main/res/xml/backup_rules.xml` | Android 12 미만의 백업 대상 제외 규칙 |
 | `android/app/src/main/res/xml/data_extraction_rules.xml` | Android 12 이상의 클라우드 백업·기기 전송 제외 규칙 |
+| `android/app/src/main/java/example/vehiclemcp/NavigationQuery.kt` | 목적지 요청·콜백·직렬화·오류 판정; false 경로 상태로 조회를 막지 않음 |
+| `android/app/src/test/java/example/vehiclemcp/NavigationQueryTest.kt` | 목적지 조회 상태 머신의 회귀 테스트 12개 |
 | `android/app/src/test/java/example/vehiclemcp/NavigationResultTest.kt` | 응답 변환 단위 테스트 4개 |
 | `android/app/src/test/java/example/vehiclemcp/VehicleBridgeLoopTest.kt` | MockWebServer 기반 HTTP 전송 테스트 2개 |
 | `android/README.md` | Android Studio·AVD 설치·실행·Bridge 연결 및 제약 안내 |
@@ -538,8 +542,8 @@ MCP 프로토콜 오류(`isError`)와 업무 실패(`status`), Bridge 전송의 
 
 | 항목 | 현재 상태 | 다음 확인 방법 |
 | --- | --- | --- |
-| 호환 내비게이션 앱/Navi Service | 사용자 AVD에서 확보되지 않음 | Pleos/해커톤 운영진에 공식 제공 앱·서비스·테스트 환경 문의 |
-| AVD SDK 초기화·권한·콜백 | 성공 근거 없음 | 호환 환경에서 연결 상태·권한·콜백 수신 확인 |
+| 호환 내비게이션 앱/Navi Service | 실제 Pleos 이미지에서 내장 앱과 SDK 연결을 사용자 확인 | 0.2.1에서 목적지 콜백 수신 확인 |
+| AVD SDK 초기화·권한·콜백 | 연결 성공 화면 확인; 목적지 콜백 성공은 미확인 | 0.2.1의 진단 이벤트와 실제 응답 비교 |
 | Android → SDK → Python 전체 왕복 | 미검증 | 목적지 설정 후 `source=pleos_sdk`, 정상 상태·단위·데이터 변경 확인 |
 | SDK 원본 관측 시각 | 원본 필드 없음 | 콜백 수신 시각과 센서 측정 시각을 구분해 설계 검토 |
 | 실제 GPT 도구 선택·응답 품질 | 가짜 응답 테스트만 있음 | 사용자가 승인한 API 환경에서 별도 품질·비용·지연 평가 |
@@ -550,7 +554,7 @@ MCP 프로토콜 오류(`isError`)와 업무 실패(`status`), Bridge 전송의 
 | 재시작·요청 취소·모든 ID 거부 경계 | 일부 가드만 구현 | 실패 시나리오별 전용 테스트 추가 검토 |
 | 운영 인증·다중 차량·공개 배포 | 범위 밖 | OAuth/소유권/외부 저장소/배포 구조를 별도 설계 |
 
-현재 사용자 AVD에서 확인한 `com.android.car.mapsplaceholder`는 지도 앱 부재를 알리는 placeholder다. 이 사실만으로 모든 Pleos 이미지에서 내비게이션을 사용할 수 없다고 단정할 수는 없지만, **현재 실제 내비게이션 조회 검증이 막혀 있다는 제한**은 보고서에 유지한다.
+초기의 `com.android.car.mapsplaceholder` 및 Console 접속 문제는 일반 Google Automotive 이미지를 사용했던 상황이다. 이후 사용자는 Pleos 이미지에서 내장 `ai.umos.maps.android.navigation.app`과 경로 안내 화면을 확인했다. 앱의 `isRouting=false` 조기 종료 문제는 0.2.1에서 제거했지만, 목적지 콜백의 정상 수신과 GPT 실제 연동은 여전히 재검증 대상이다.
 
 ## 12. 같은 검증을 재현하는 명령
 
@@ -627,7 +631,7 @@ Android Bridge나 다른 시뮬레이터를 동시에 연결하면 명령을 나
 - [원본 1,000회 성능 결과](docs/benchmarks/bridge-c16-1000-r1.json)
 - [벤치마크 스크립트 배포본](https://github.com/FirstF1ame/HyundaiMCP/blob/avd-test-artifacts/benchmark_mcp.py)
 - [Windows 단계별 측정 안내](https://github.com/FirstF1ame/HyundaiMCP/blob/avd-test-artifacts/MCP-BENCHMARK-GUIDE.md)
-- [Android 제작 시 배포한 전체 소스 ZIP](https://raw.githubusercontent.com/FirstF1ame/HyundaiMCP/avd-test-artifacts/HyundaiMCP-avd-test-source.zip) — 이 ZIP 생성 이후 추가된 벤치마크·본 보고서는 별도 파일이다.
+- [Android 제작 시 배포한 전체 소스 ZIP](https://raw.githubusercontent.com/FirstF1ame/HyundaiMCP/avd-test-artifacts/HyundaiMCP-avd-test-source.zip) — 이전 0.2.0 보존본은 `HyundaiMCP-avd-0.2.0-source.zip`, 현재 수정본은 `HyundaiMCP-avd-0.2.1-source.zip`으로 구분한다.
 - [MCP Python SDK v1](https://py.sdk.modelcontextprotocol.io/v1/)
 - [Pleos NaviHelper SDK](https://document.pleos.ai/docs/pleos-only/connect-sdk-pleos/NaviHelper/intro)
 - [Pleos 공식 FAQ](https://document.pleos.ai/docs/pleos-only/vehicle-app-developer-guide/vehicle-app-faq#navihelper-api-availability)
