@@ -1,0 +1,37 @@
+{
+  "evidence_type": "사용자가 채팅에 붙여넣은 PowerShell 출력의 정규화·비식별화 요약",
+  "date_kst": "2026-10-28",
+  "redactions": [
+    "destination_name을 공유용 문자열로 대체; 원본 콘솔 출력 전체 복제본이 아님"
+  ],
+  "records": [
+    {
+      "tool_names": [
+        "get_navigation_info"
+      ],
+      "isError": false,
+      "structuredContent": {
+        "source": "pleos_sdk",
+        "status": "ok",
+        "observed_at": "2026-10-28T11:51:23.114557Z",
+        "destination_name": "테스트 목적지 (공유용 비식별화)",
+        "remaining_distance_m": 23000,
+        "remaining_duration_s": 1860
+      }
+    },
+    {
+      "tool_names": [
+        "get_navigation_info"
+      ],
+      "isError": false,
+      "structuredContent": {
+        "source": "pleos_sdk",
+        "status": "ok",
+        "observed_at": "2026-10-28T11:53:39.041717Z",
+        "destination_name": "테스트 목적지 (공유용 비식별화)",
+        "remaining_distance_m": 23000,
+        "remaining_duration_s": 1860
+      }
+    }
+  ]
+}

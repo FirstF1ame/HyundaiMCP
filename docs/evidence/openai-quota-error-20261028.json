@@ -1,0 +1,18 @@
+{
+  "evidence_type": "사용자가 첨부한 GPT 호출 오류 로그에서 추출한 요약; 원본 traceback 전체가 아님",
+  "date_kst": "2026-10-28",
+  "operation": "OpenAI Responses API 요청 (ai.responses.create)",
+  "http_status": 429,
+  "error": {
+    "type": "insufficient_quota",
+    "code": "credit_balance_exhausted",
+    "message": "You have no credits remaining."
+  },
+  "verified": "OpenAI API 오류 응답 수신",
+  "not_verified": [
+    "모델 응답 생성",
+    "모델 ID의 실제 사용 가능 여부",
+    "GPT가 생성한 도구 호출",
+    "GPT에 도구 결과 반환 후 최종 답변"
+  ]
+}

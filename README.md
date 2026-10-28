@@ -1,5 +1,7 @@
 # Pleos AVD test app downloads
 
+**최신 팀 공유 문서:** [Vehicle MCP 0.2.1 인수인계 및 검증 보고서](TEAM_HANDOFF_0.2.1.md). 사용자 AVD의 SDK–MCP 왕복 성공 및 OpenAI 크레딧 오류까지 반영했습니다.
+
 Latest: **0.2.1-avd**, versionCode 2.
 
 - [Download APK](vehicle-mcp-avd-0.2.1-debug.apk)
@@ -15,7 +17,7 @@ Latest: **0.2.1-avd**, versionCode 2.
 and returns an error when no callback arrives instead of assuming no destination.
 
 Validated: APK build/signature, 18 Android JVM tests, 12 Python tests, Android Lint (0 findings).
-Real Pleos AVD destination callbacks and live GPT API integration still require verification.
+User verified Pleos AVD destination callbacks and direct PC MCP round trips. OpenAI API returned a credit-balance error; live GPT tool calling and final answers remain unverified.
 
 Latest APK SHA256: `cd7e9cecbfac7520dd1feb3eccee91bf917170d6d9ac57b275160db73b0c14da`
 

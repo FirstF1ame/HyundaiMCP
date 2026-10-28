@@ -1,5 +1,7 @@
 # Vehicle MCP 검증 결과 및 코드 역할 정리
 
+> **최신 상태:** [팀 인수인계 및 최신 검증 보고서](TEAM_HANDOFF_0.2.1.md)를 우선 참고하세요. 이후 사용자 AVD에서 SDK 목적지 조회와 PC MCP 왕복이 성공했고, OpenAI는 크레딧 부족 오류 응답까지 확인했습니다. 아래의 미확인·대기 표시는 이전 작성 시점의 기록이며 성능 원본 수치는 그대로 유지합니다.
+
 작성일: 2026-10-28 (한국 시간)  
 대상 프로젝트: FirstF1ame/HyundaiMCP  
 주요 근거: [bridge-c16-1000-r1.json](docs/benchmarks/bridge-c16-1000-r1.json)

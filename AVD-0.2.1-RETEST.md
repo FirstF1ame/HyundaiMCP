@@ -1,5 +1,7 @@
 # AVD 0.2.1: destination query correction
 
+> 이후 사용자 AVD에서 SDK 목적지 조회와 PC MCP 왕복 성공을 확인했습니다. 아래는 수정본 배포 당시의 기록입니다. [최신 팀 공유 문서](TEAM_HANDOFF_0.2.1.md)를 우선 참고하세요.
+
 ## 무엇을 수정했나
 
 이전 테스트 앱은 `getRouteStateInfo()`의 `isRouting=false`를 받으면
