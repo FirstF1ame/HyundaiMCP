@@ -26,3 +26,7 @@ The original 0.2.0 APK/source are preserved under versioned filenames.
 The source ZIP contains all current code. Only the new/changed query files are additionally
 published as plain files for review; this branch is not a complete project checkout.
 The application source updates have not been merged into main.
+
+## 프로젝트 비교
+
+[HyundaiMCP와 HyeeSeong/pleostest 비교 보고서](COMPARISON_PLEOSTEST_20261029.md) — 2026-10-29, 친구 main `0d288c8` 코드와 우리 0.2.1 비교.
